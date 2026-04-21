@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "prisma generate && prisma migrate deploy"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
