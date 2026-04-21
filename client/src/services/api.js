@@ -14,22 +14,22 @@ API.interceptors.request.use((config) => {
 })
 
 // Auth
-export const register = (data) => API.post('/auth/register', data)
-export const login = (data) => API.post('/auth/login', data)
+export const register = (data) => API.post('/api/auth/register', data)
+export const login = (data) => API.post('/api/auth/login', data)
 
 // Tasks
-export const getTasks = () => API.get('/tasks')
-export const createTask = (data) => API.post('/tasks', data)
-export const toggleTask = (id) => API.patch(`/tasks/${id}`)
-export const deleteTask = (id) => API.delete(`/tasks/${id}`)
+export const getTasks = () => API.get('/api/tasks')
+export const createTask = (data) => API.post('/api/tasks', data)
+export const toggleTask = (id) => API.patch(`/api/tasks/${id}`)
+export const deleteTask = (id) => API.delete(`/api/tasks/${id}`)
 
 // Notes
-export const getNotes = () => API.get('/notes')
-export const createNote = (data) => API.post('/notes', data)
-export const deleteNote = (id) => API.delete(`/notes/${id}`)
+export const getNotes = () => API.get('/api/notes')
+export const createNote = (data) => API.post('/api/notes', data)
+export const deleteNote = (id) => API.delete(`/api/notes/${id}`)
 
 // AI
-export const getPlanner = () => API.post('/ai/planner')
-export const summarizeNote = (noteId) => API.post('/ai/summarize', { noteId })
-export const chatWithAI = (message) => API.post('/ai/chat', { message })
-export const getTimePlan = (startTime, endTime) => API.post('/ai/timeplan', { startTime, endTime })
+export const getPlanner = () => API.post('/api/ai/planner')
+export const summarizeNote = (noteId) => API.post('/api/ai/summarize', { noteId })
+export const chatWithAI = (message) => API.post('/api/ai/chat', { message })
+export const getTimePlan = (startTime, endTime) => API.post('/api/ai/timeplan', { startTime, endTime })
