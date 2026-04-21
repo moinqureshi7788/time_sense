@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { sendMessage } from '../services/api'
+import { chatWithAI } from "../services/api";
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function AISkeleton() {
@@ -87,7 +87,7 @@ function AIAssistant() {
     setThinking(true)
 
     try {
-      const res = await sendMessage([...messages, userMsg])
+      const res = await chatWithAI([...messages, userMsg])
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }])
     } catch (error) {
       console.error(error)
