@@ -1,14 +1,77 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { chatWithAI } from '../services/api'
+import { sendMessage } from '../services/api'
 
-function AI() {
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+function AISkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-950 flex">
+
+      {/* Sidebar skeleton */}
+      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-6">
+        <div className="h-7 w-32 bg-gray-800 rounded-lg animate-pulse mb-10" />
+        <div className="flex flex-col gap-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-10 bg-gray-800 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </aside>
+
+      {/* Main skeleton */}
+      <main className="flex-1 flex flex-col p-8">
+
+        {/* Header */}
+        <div className="mb-6">
+          <div className="h-8 w-48 bg-gray-800 rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-64 bg-gray-800 rounded-lg animate-pulse" />
+        </div>
+
+        {/* Chat area */}
+        <div className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-4">
+          <div className="flex flex-col gap-4">
+            {/* AI message bubble */}
+            <div className="flex gap-3">
+              <div className="h-8 w-8 bg-gray-800 rounded-full animate-pulse shrink-0" />
+              <div className="h-16 bg-gray-800 rounded-2xl animate-pulse flex-1 max-w-sm" />
+            </div>
+            {/* User message bubble */}
+            <div className="flex gap-3 justify-end">
+              <div className="h-10 bg-gray-800 rounded-2xl animate-pulse w-48" />
+              <div className="h-8 w-8 bg-gray-800 rounded-full animate-pulse shrink-0" />
+            </div>
+            {/* Another AI bubble */}
+            <div className="flex gap-3">
+              <div className="h-8 w-8 bg-gray-800 rounded-full animate-pulse shrink-0" />
+              <div className="h-24 bg-gray-800 rounded-2xl animate-pulse flex-1 max-w-md" />
+            </div>
+          </div>
+        </div>
+
+        {/* Input skeleton */}
+        <div className="h-14 bg-gray-900 border border-gray-800 rounded-2xl animate-pulse" />
+
+      </main>
+    </div>
+  )
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+function AIAssistant() {
   const navigate = useNavigate()
+  const [loading] = useState(false)
   const [messages, setMessages] = useState([
-    { role: 'ai', text: 'Hi! I am your TimeSense AI assistant. Ask me anything about productivity, time management, or your goals! 🤖' }
+    {
+      role: 'assistant',
+      content: "Hi! I'm your TimeSense AI assistant. I can help you with productivity tips, analyzing your schedule, task prioritization, and anything related to your workday. What's on your mind?"
+    }
   ])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [thinking, setThinking] = useState(false)
+  const bottomRef = useRef(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -17,23 +80,27 @@ function AI() {
   }
 
   const handleSend = async () => {
-    if (input.trim() === '') return
-    const userMessage = input
+    if (!input.trim() || thinking) return
+    const userMsg = { role: 'user', content: input.trim() }
+    setMessages(prev => [...prev, userMsg])
     setInput('')
-
-    // Add user message to chat
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }])
-    setLoading(true)
+    setThinking(true)
 
     try {
-      const res = await chatWithAI(userMessage)
-      setMessages(prev => [...prev, { role: 'ai', text: res.data.reply }])
+      const res = await sendMessage([...messages, userMsg])
+      setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }])
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, something went wrong. Please try again.' }])
+      console.error(error)
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "Sorry, I ran into an issue. Please try again in a moment."
+      }])
     } finally {
-      setLoading(false)
+      setThinking(false)
     }
   }
+
+  if (loading) return <AISkeleton />
 
   return (
     <div className="min-h-screen bg-gray-950 flex">
@@ -55,11 +122,11 @@ function AI() {
             🤖 AI Assistant
           </Link>
           <Link to="/insights" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-  📊 Insights
-</Link>
-        <Link to="/pomodoro" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-  🍅 Pomodoro
-</Link>
+            📊 Insights
+          </Link>
+          <Link to="/pomodoro" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
+            🍅 Pomodoro
+          </Link>
         </nav>
         <button
           onClick={handleLogout}
@@ -69,56 +136,84 @@ function AI() {
         </button>
       </aside>
 
-      {/* Chat area */}
-      <main className="flex-1 flex flex-col p-8">
+      {/* Main chat area */}
+      <main className="flex-1 flex flex-col overflow-hidden">
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white">AI Assistant 🤖</h2>
-          <p className="text-gray-400 text-sm mt-1">Ask me anything about productivity and time management</p>
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-gray-800">
+          <h2 className="text-2xl font-bold text-white">🤖 AI Assistant</h2>
+          <p className="text-gray-400 text-sm mt-1">Powered by LLaMA 3.3 70B via Groq</p>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-4 overflow-y-auto mb-4">
-          {messages.map((msg, index) => (
+        <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4">
+          {messages.map((msg, i) => (
             <div
-              key={index}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              key={i}
+              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-xl px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-gray-800 text-gray-300 rounded-bl-sm'
-              }`}>
-                {msg.text}
+              {msg.role === 'assistant' && (
+                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-sm shrink-0 mt-0.5">
+                  🤖
+                </div>
+              )}
+              <div
+                className={`max-w-2xl px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-tr-sm'
+                    : 'bg-gray-800 text-gray-200 rounded-tl-sm'
+                }`}
+              >
+                {msg.content}
               </div>
+              {msg.role === 'user' && (
+                <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-sm shrink-0 mt-0.5">
+                  👤
+                </div>
+              )}
             </div>
           ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800 text-gray-400 px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
-                Thinking...
+
+          {/* Typing indicator */}
+          {thinking && (
+            <div className="flex gap-3 justify-start">
+              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-sm shrink-0">
+                🤖
+              </div>
+              <div className="bg-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1 items-center">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-2 w-2 bg-gray-500 rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
               </div>
             </div>
           )}
+
+          <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask me anything..."
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-          <button
-            onClick={handleSend}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
-          >
-            {loading ? '...' : 'Send'}
-          </button>
+        {/* Input bar */}
+        <div className="px-8 py-4 border-t border-gray-800">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder="Ask me anything about your productivity..."
+              className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || thinking}
+              className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-colors"
+            >
+              Send →
+            </button>
+          </div>
         </div>
 
       </main>
@@ -126,4 +221,4 @@ function AI() {
   )
 }
 
-export default AI
+export default AIAssistant

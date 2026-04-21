@@ -26,7 +26,16 @@ export const deleteTask = (id) => API.delete(`/api/tasks/${id}`)
 // Notes
 export const getNotes = () => API.get('/api/notes')
 export const createNote = (data) => API.post('/api/notes', data)
+export const updateNote = (id, data) => API.put(`/api/notes/${id}`, data)
 export const deleteNote = (id) => API.delete(`/api/notes/${id}`)
+
+// Insights
+export const uploadScreenTime = (formData) => API.post('/api/insights/read-screenshot', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+})
+export const uploadHealth = (formData) => API.post('/api/insights/upload-health', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+})
 
 // AI
 export const getPlanner = () => API.post('/api/ai/planner')
