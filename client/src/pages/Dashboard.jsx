@@ -4,7 +4,6 @@ import Layout from '../components/Layout'
 import { getTasks, getNotes, getTimePlan, toggleTask } from '../services/api'
 
 function Dashboard() {
-  const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
