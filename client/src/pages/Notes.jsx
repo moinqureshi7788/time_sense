@@ -153,11 +153,11 @@ function Notes() {
 
   const handleSave = async ({ title, content }) => {
   if (modal.note?.id) {
-    const res = await updateNote(modal.note.id, { title, content })
+    const res = await updateNote(modal.note.id, { title, body: content }) // ← content → body
     const updated = { ...modal.note, ...res.data, title, content }
     setNotes(prev => prev.map(n => n.id === modal.note.id ? updated : n))
   } else {
-    const res = await createNote({ title, content })
+    const res = await createNote({ title, body: content }) // ← content → body
     const created = { ...res.data, title, content }
     setNotes(prev => [created, ...prev])
   }

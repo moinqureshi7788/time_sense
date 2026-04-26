@@ -85,4 +85,35 @@ router.delete('/:id', verifyToken, async (req, res) => {
   }
 })
 
+// ── Update a note ───────────────────────────────────────────
+router.put('/:id', verifyToken, async (req, res) => {
+  try {
+    const note = await prisma.note.findFirst({
+      where: {
+        id: Number(req.params.id),
+        userId: req.user.id
+      }
+    })
+
+    if (!note) {
+      return res.status(404).json({ message: 'Note not found' })
+    }
+
+    const { title, body } = req.body
+
+    const updated = await prisma.note.update({
+      where: { id: note.id },
+      data: {
+        title: title || note.title,
+        body: body || note.body
+      }
+    })
+
+    res.json(updated)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Something went wrong' })
+  }
+})
+
 export default router
