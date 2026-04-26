@@ -43,7 +43,8 @@ function Notes() {
       try {
         const res = await getNotes()
         setNotes(res.data)
-        if (res.data.length > 0) selectNote(res.data[0])
+
+if (res.data.length > 0 && window.innerWidth >= 768) selectNote(res.data[0], false)
       } catch (error) {
         console.error(error)
       } finally {
@@ -53,12 +54,13 @@ function Notes() {
     fetchNotes()
   }, [])
 
-  const selectNote = (note) => {
-    setSelectedNote(note)
-    setTitle(note.title)
-    setContent(note.content)
-    setMobileView('editor')
-  }
+
+const selectNote = (note, switchView = true) => {
+  setSelectedNote(note)
+  setTitle(note.title)
+  setContent(note.content)
+  if (switchView) setMobileView('editor')
+}
 
   const handleNew = async () => {
     try {
