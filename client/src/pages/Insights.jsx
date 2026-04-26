@@ -52,7 +52,9 @@ function Insights() {
       if (screenTimeFile) {
         setProgress('Reading Screen Time screenshot...')
         const formData = new FormData()
-        formData.append('screenshot', screenTimeFile)
+        screenTimeFile.forEach(file => {
+  formData.append('screenshots', file)
+})
         const res = await uploadScreenTime(formData)
         result = res.data
       }
@@ -117,7 +119,13 @@ function Insights() {
                   </>
                 )}
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => setScreenTimeFile(e.target.files[0])} />
+              <input
+  type="file"
+  accept="image/*"
+  multiple
+  className="hidden"
+  onChange={(e) => setScreenTimeFile(Array.from(e.target.files))}
+/>
             </label>
           </div>
 
