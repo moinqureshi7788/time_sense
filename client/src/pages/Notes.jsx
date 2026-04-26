@@ -39,6 +39,12 @@ function NoteModal({ note, mode: initialMode, onClose, onSave, onDelete }) {
     }
   }
 
+  useEffect(() => {
+  setTitle(note?.title || '')
+  setContent(note?.content || '')
+  setMode(initialMode)
+}, [note])
+
   const isNew = !note?.id
 
   return (
@@ -146,16 +152,16 @@ function Notes() {
   const closeModal = () => setModal(null)
 
   const handleSave = async ({ title, content }) => {
-    if (modal.note?.id) {
-      // Updating existing
-      const res = await updateNote(modal.note.id, { title, content })
-      setNotes(prev => prev.map(n => n.id === modal.note.id ? res.data : n))
-    } else {
-      // Creating new
-      const res = await createNote({ title, content })
-      setNotes(prev => [res.data, ...prev])
-    }
+  if (modal.note?.id) {
+    const res = await updateNote(modal.note.id, { title, content })
+    const updated = { ...modal.note, ...res.data, title, content }
+    setNotes(prev => prev.map(n => n.id === modal.note.id ? updated : n))
+  } else {
+    const res = await createNote({ title, content })
+    const created = { ...res.data, title, content }
+    setNotes(prev => [created, ...prev])
   }
+}
 
   const handleDelete = async () => {
     if (!modal.note?.id) return
