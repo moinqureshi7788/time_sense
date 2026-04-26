@@ -1,27 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
 import { getNotes, createNote, updateNote, deleteNote } from '../services/api'
+import Layout from '../components/Layout'
 
-// ─── Skeleton ────────────────────────────────────────────────────────────────
 function NotesSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-950 flex">
-
-      {/* Sidebar skeleton */}
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-6">
-        <div className="h-7 w-32 bg-gray-800 rounded-lg animate-pulse mb-10" />
-        <div className="flex flex-col gap-2">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-10 bg-gray-800 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </aside>
-
-      {/* Main skeleton — two panel layout */}
-      <main className="flex-1 flex">
-
-        {/* Notes list panel */}
-        <div className="w-72 bg-gray-900 border-r border-gray-800 p-5 flex flex-col">
+    <Layout current="/notes">
+      <div className="flex gap-4 h-full" style={{ minHeight: '70vh' }}>
+        <div className="w-full md:w-72 bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col">
           <div className="h-7 w-24 bg-gray-800 rounded-lg animate-pulse mb-4" />
           <div className="h-10 bg-gray-800 rounded-xl animate-pulse mb-4" />
           <div className="flex flex-col gap-2">
@@ -33,21 +18,16 @@ function NotesSkeleton() {
             ))}
           </div>
         </div>
-
-        {/* Editor panel */}
-        <div className="flex-1 p-8">
+        <div className="hidden md:flex flex-1 flex-col bg-gray-900 border border-gray-800 rounded-2xl p-8">
           <div className="h-8 w-48 bg-gray-800 rounded-lg animate-pulse mb-6" />
-          <div className="h-full bg-gray-900 border border-gray-800 rounded-2xl animate-pulse" style={{ minHeight: '400px' }} />
+          <div className="flex-1 bg-gray-800 rounded-xl animate-pulse" style={{ minHeight: '400px' }} />
         </div>
-
-      </main>
-    </div>
+      </div>
+    </Layout>
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 function Notes() {
-  const navigate = useNavigate()
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedNote, setSelectedNote] = useState(null)
@@ -55,6 +35,7 @@ function Notes() {
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [mobileView, setMobileView] = useState('list') // 'list' | 'editor'
   const saveTimeout = useRef(null)
 
   useEffect(() => {
@@ -62,9 +43,7 @@ function Notes() {
       try {
         const res = await getNotes()
         setNotes(res.data)
-        if (res.data.length > 0) {
-          selectNote(res.data[0])
-        }
+        if (res.data.length > 0) selectNote(res.data[0])
       } catch (error) {
         console.error(error)
       } finally {
@@ -74,16 +53,11 @@ function Notes() {
     fetchNotes()
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
-
   const selectNote = (note) => {
     setSelectedNote(note)
     setTitle(note.title)
     setContent(note.content)
+    setMobileView('editor')
   }
 
   const handleNew = async () => {
@@ -95,17 +69,6 @@ function Notes() {
     } catch (error) {
       console.error(error)
     }
-  }
-
-  // Auto-save with debounce
-  const handleTitleChange = (val) => {
-    setTitle(val)
-    scheduleSave(val, content)
-  }
-
-  const handleContentChange = (val) => {
-    setContent(val)
-    scheduleSave(title, val)
   }
 
   const scheduleSave = (t, c) => {
@@ -125,6 +88,9 @@ function Notes() {
     }, 800)
   }
 
+  const handleTitleChange = (val) => { setTitle(val); scheduleSave(val, content) }
+  const handleContentChange = (val) => { setContent(val); scheduleSave(title, val) }
+
   const handleDelete = async (id) => {
     try {
       await deleteNote(id)
@@ -137,6 +103,7 @@ function Notes() {
           setSelectedNote(null)
           setTitle('')
           setContent('')
+          setMobileView('list')
         }
       }
     } catch (error) {
@@ -151,48 +118,18 @@ function Notes() {
 
   if (loading) return <NotesSkeleton />
 
+  // Notes uses a custom full-height two-panel layout.
+  // On mobile: show list OR editor, with a back button.
+  // Layout's <main> padding is overridden via -m-4 md:m-0 trick to go edge-to-edge.
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <Layout current="/notes">
+      {/* Negative margin to undo Layout padding on mobile, giving panels full height */}
+      <div className="flex gap-0 md:gap-4 -m-4 md:m-0 h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)]">
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-6">
-        <h1 className="text-2xl font-bold text-white mb-10">TimeSense</h1>
-        <nav className="flex flex-col gap-1">
-          <Link to="/dashboard" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            🏠 Dashboard
-          </Link>
-          <Link to="/tasks" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            ✅ Tasks
-          </Link>
-          <Link to="/notes" className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-medium text-sm">
-            📝 Notes
-          </Link>
-          <Link to="/ai" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            🤖 AI Assistant
-          </Link>
-          <Link to="/insights" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            📊 Insights
-          </Link>
-          <Link to="/pomodoro" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            🍅 Pomodoro
-          </Link>
-        </nav>
-        <button
-          onClick={handleLogout}
-          className="mt-auto flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-gray-800 text-sm transition-colors"
-        >
-          🚪 Logout
-        </button>
-      </aside>
+        {/* Notes list panel — always visible on desktop, conditional on mobile */}
+        <div className={`${mobileView === 'editor' ? 'hidden md:flex' : 'flex'} w-full md:w-72 bg-gray-900 md:border md:border-gray-800 md:rounded-2xl flex-col shrink-0`}>
 
-      {/* Two-panel layout */}
-      <div className="flex-1 flex overflow-hidden">
-
-        {/* Notes list panel */}
-        <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col">
-
-          {/* Panel header */}
-          <div className="p-5 border-b border-gray-800">
+          <div className="p-4 md:p-5 border-b border-gray-800">
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-semibold text-white">📝 Notes</h2>
               <button
@@ -211,8 +148,7 @@ function Notes() {
             />
           </div>
 
-          {/* Note list */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto p-3 pb-24 md:pb-3">
             {filteredNotes.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-3xl mb-2">📭</p>
@@ -240,39 +176,39 @@ function Notes() {
                       🗑️
                     </button>
                   </div>
-                  <p className="text-gray-500 text-xs mt-1 truncate">
-                    {note.content || 'No content'}
-                  </p>
+                  <p className="text-gray-500 text-xs mt-1 truncate">{note.content || 'No content'}</p>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        {/* Editor panel */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Editor panel — always visible on desktop, conditional on mobile */}
+        <div className={`${mobileView === 'list' ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-gray-900 md:border md:border-gray-800 md:rounded-2xl overflow-hidden`}>
           {selectedNote ? (
             <>
-              {/* Editor header */}
-              <div className="px-8 pt-8 pb-4 border-b border-gray-800 flex justify-between items-center">
+              <div className="px-4 md:px-8 pt-4 md:pt-8 pb-4 border-b border-gray-800 flex justify-between items-center gap-3">
+                {/* Back button — mobile only */}
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="md:hidden text-gray-400 hover:text-white text-sm shrink-0"
+                >
+                  ← Back
+                </button>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder="Note title..."
-                  className="text-2xl font-bold text-white bg-transparent focus:outline-none flex-1 placeholder-gray-600"
+                  className="text-xl md:text-2xl font-bold text-white bg-transparent focus:outline-none flex-1 placeholder-gray-600 min-w-0"
                 />
-                <span className="text-xs text-gray-600 ml-4 shrink-0">
-                  {saving ? '💾 Saving...' : '✓ Saved'}
-                </span>
+                <span className="text-xs text-gray-600 shrink-0">{saving ? '💾 Saving...' : '✓ Saved'}</span>
               </div>
-
-              {/* Editor body */}
               <textarea
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder="Start writing..."
-                className="flex-1 bg-transparent text-gray-300 text-sm leading-relaxed px-8 py-6 resize-none focus:outline-none placeholder-gray-600"
+                className="flex-1 bg-transparent text-gray-300 text-sm leading-relaxed px-4 md:px-8 py-4 md:py-6 resize-none focus:outline-none placeholder-gray-600 pb-24 md:pb-6"
               />
             </>
           ) : (
@@ -292,7 +228,7 @@ function Notes() {
         </div>
 
       </div>
-    </div>
+    </Layout>
   )
 }
 

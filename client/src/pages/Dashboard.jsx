@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import Layout from '../components/Layout'
 import { getTasks, getNotes, getTimePlan, toggleTask } from '../services/api'
 
 function Dashboard() {
@@ -35,11 +36,6 @@ function Dashboard() {
     fetchData()
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
   
   const handleToggle = async (id) => {
   try {
@@ -158,124 +154,43 @@ const stats = [
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex">
-
-        {/* Sidebar skeleton */}
-        <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-6">
-          <div className="h-7 w-32 bg-gray-800 rounded-lg animate-pulse mb-10" />
-          <div className="flex flex-col gap-2">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-10 bg-gray-800 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        </aside>
-
-        {/* Main skeleton */}
-        <main className="flex-1 p-8">
-
-          {/* Header */}
-          <div className="mb-8">
-            <div className="h-8 w-64 bg-gray-800 rounded-lg animate-pulse mb-2" />
-            <div className="h-4 w-48 bg-gray-800 rounded-lg animate-pulse" />
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <div className="h-8 w-8 bg-gray-800 rounded-lg animate-pulse mb-2" />
-                <div className="h-7 w-16 bg-gray-800 rounded-lg animate-pulse mb-2" />
-                <div className="h-4 w-24 bg-gray-800 rounded-lg animate-pulse" />
-              </div>
-            ))}
-          </div>
-
-          {/* Energy chart */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-            <div className="h-5 w-48 bg-gray-800 rounded-lg animate-pulse mb-4" />
-            <div className="h-40 bg-gray-800 rounded-xl animate-pulse" />
-          </div>
-
-          {/* Planner */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-            <div className="h-5 w-40 bg-gray-800 rounded-lg animate-pulse mb-4" />
-            <div className="h-32 bg-gray-800 rounded-xl animate-pulse" />
-          </div>
-
-          {/* Tasks */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-            <div className="h-5 w-32 bg-gray-800 rounded-lg animate-pulse mb-4" />
-            <div className="flex flex-col gap-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-12 bg-gray-800 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          </div>
-
-        </main>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <Layout current="/dashboard">
+      <div className="mb-8">
+        <div className="h-8 w-64 bg-gray-800 rounded-lg animate-pulse mb-2" />
+        <div className="h-4 w-48 bg-gray-800 rounded-lg animate-pulse" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+            <div className="h-8 w-8 bg-gray-800 rounded-lg animate-pulse mb-2" />
+            <div className="h-7 w-16 bg-gray-800 rounded-lg animate-pulse mb-2" />
+            <div className="h-4 w-24 bg-gray-800 rounded-lg animate-pulse" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+        <div className="h-5 w-48 bg-gray-800 rounded-lg animate-pulse mb-4" />
+        <div className="h-40 bg-gray-800 rounded-xl animate-pulse" />
+      </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+        <div className="h-5 w-40 bg-gray-800 rounded-lg animate-pulse mb-4" />
+        <div className="h-32 bg-gray-800 rounded-xl animate-pulse" />
+      </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <div className="h-5 w-32 bg-gray-800 rounded-lg animate-pulse mb-4" />
+        <div className="flex flex-col gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-12 bg-gray-800 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </Layout>
+  )
+}
 
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-64 bg-gray-900 border-r border-gray-800 flex-col p-6 shrink-0">
-        <h1 className="text-2xl font-bold text-white mb-10">TimeSense</h1>
-        <nav className="flex flex-col gap-1">
-          <Link to="/dashboard" className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-medium text-sm">
-            🏠 Dashboard
-          </Link>
-          <Link to="/tasks" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            ✅ Tasks
-          </Link>
-          <Link to="/notes" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            📝 Notes
-          </Link>
-          <Link to="/ai" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-            🤖 AI Assistant
-          </Link>
-          <Link to="/insights" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-  📊 Insights
-</Link>
-<Link to="/pomodoro" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-sm transition-colors">
-  🍅 Pomodoro
-</Link>
-        </nav>
-        <button
-          onClick={handleLogout}
-          className="mt-auto flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-gray-800 text-sm transition-colors"
-        >
-          🚪 Logout
-        </button>
-      </aside>
-
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex justify-around items-center px-2 py-3 z-50">
-        <Link to="/dashboard" className="flex flex-col items-center gap-1 text-blue-400 text-xs">
-          <span className="text-lg">🏠</span> Home
-        </Link>
-        <Link to="/tasks" className="flex flex-col items-center gap-1 text-gray-400 text-xs">
-          <span className="text-lg">✅</span> Tasks
-        </Link>
-        <Link to="/notes" className="flex flex-col items-center gap-1 text-gray-400 text-xs">
-          <span className="text-lg">📝</span> Notes
-        </Link>
-        <Link to="/ai" className="flex flex-col items-center gap-1 text-gray-400 text-xs">
-          <span className="text-lg">🤖</span> AI
-        </Link>
-        <Link to="/insights" className="flex flex-col items-center gap-1 text-gray-400 text-xs">
-          <span className="text-lg">📊</span> Insights
-        </Link>
-        <Link to="/pomodoro" className="flex flex-col items-center gap-1 text-gray-400 text-xs">
-          <span className="text-lg">🍅</span> Timer
-        </Link>
-      </nav>
-
-      {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
+ return (
+  <Layout current="/dashboard">
 
         {/* Header */}
         <div className="mb-8">
@@ -561,9 +476,8 @@ const stats = [
   </div>
 </div>
 
-      </main>
-    </div>
-  )
+     </Layout>
+)
 }
 
 export default Dashboard
