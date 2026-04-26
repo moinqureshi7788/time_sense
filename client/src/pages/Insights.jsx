@@ -44,7 +44,7 @@ function Insights() {
   })
 
   const handleAnalyze = async () => {
-    if (!screenTimeFile && !healthFile) return
+    if ((!screenTimeFile || screenTimeFile.length === 0) && !healthFile) return
     setAnalyzing(true)
     setProgress('Uploading files...')
     try {
@@ -108,7 +108,7 @@ function Insights() {
                 {screenTimeFile ? (
                   <>
                     <p className="text-2xl mb-1">✅</p>
-                    <p className="text-blue-400 text-sm font-medium">{screenTimeFile.name}</p>
+                    <p className="text-blue-400 text-sm font-medium">{screenTimeFile.length} screenshot{screenTimeFile.length > 1 ? 's' : ''} selected</p>
                     <p className="text-gray-500 text-xs mt-1">Click to replace</p>
                   </>
                 ) : (
