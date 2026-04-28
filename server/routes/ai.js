@@ -144,17 +144,13 @@ Use this data to give personalized, specific advice. Reference their actual task
 // ── AI Time Planner ─────────────────────────────────────────
 router.post('/timeplan', verifyToken, async (req, res) => {
   try {
-    const { startTime, endTime } = req.body
+    const { startTime, endTime, tasks } = req.body
 
-    const tasks = await prisma.task.findMany({
-      where: { userId: req.user.id, done: false }
-    })
-
-    if (tasks.length === 0) {
+    if (!tasks || tasks.length === 0) {
       return res.json({ schedule: [] })
     }
 
-    const taskList = tasks.map(t => `- ${t.title}`).join('\n')
+    const taskList = tasks.map(t => `- ${t.title}: ${t.duration}`).join('\n')
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -169,9 +165,10 @@ Each item must have: "time" (format: "9:00 AM"), "duration" (e.g. "30 min"), "ta
           role: 'user',
           content: `Create a time schedule for today from ${startTime} to ${endTime}.
 Include short breaks between tasks.
-Tasks to schedule:
+Tasks to schedule (with durations):
 ${taskList}
 
+Use the exact durations provided for each task.
 Respond with ONLY a JSON array like this:
 [{"time":"9:00 AM","duration":"45 min","task":"Task name","type":"work"},{"time":"9:45 AM","duration":"15 min","task":"Short break","type":"break"}]`
         }
@@ -179,10 +176,7 @@ Respond with ONLY a JSON array like this:
     })
 
     let content = response.choices[0].message.content.trim()
-
-    // Strip markdown code blocks if present
     content = content.replace(/```json/g, '').replace(/```/g, '').trim()
-
     const schedule = JSON.parse(content)
     res.json({ schedule })
 

@@ -44,4 +44,5 @@ export const analyzeData = (formData) => API.post('/api/insights/analyze', formD
 export const getPlanner = () => API.post('/api/ai/planner')
 export const summarizeNote = (noteId) => API.post('/api/ai/summarize', { noteId })
 export const chatWithAI = (message) => API.post('/api/ai/chat', { message })
-export const getTimePlan = (startTime, endTime) => API.post('/api/ai/timeplan', { startTime, endTime })
+export const getTimePlan = (startTime, endTime, tasks) => 
+  API.post('/api/ai/timeplan', { startTime, endTime, tasks })

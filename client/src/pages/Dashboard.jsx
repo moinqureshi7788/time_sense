@@ -4,6 +4,8 @@ import Layout from '../components/Layout'
 import { getTasks, getNotes, getTimePlan, toggleTask } from '../services/api'
 
 function Dashboard() {
+  const [showDurationModal, setShowDurationModal] = useState(false)
+  const [taskDurations, setTaskDurations] = useState({})
   const [tasks, setTasks] = useState([])
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -12,6 +14,8 @@ function Dashboard() {
   const [showSettings, setShowSettings] = useState(false)
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('21:00')
+
+  
 
   const user = JSON.parse(localStorage.getItem('user'))
   const savedInsights = localStorage.getItem('insights')
@@ -46,24 +50,27 @@ function Dashboard() {
 }
 
   const handleTimePlan = async () => {
-    setPlannerLoading(true)
-    setSchedule([])
-    try {
-      const format = (t) => {
-        const [h, m] = t.split(':')
-        const hour = parseInt(h)
-        const ampm = hour >= 12 ? 'PM' : 'AM'
-        const hour12 = hour % 12 || 12
-        return `${hour12}:${m} ${ampm}`
-      }
-      const res = await getTimePlan(format(startTime), format(endTime))
-      setSchedule(res.data.schedule)
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setPlannerLoading(false)
+  setPlannerLoading(true)
+  setSchedule([])
+  try {
+    const format = (t) => {
+      const [h, m] = t.split(':')
+      const hour = parseInt(h)
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const hour12 = hour % 12 || 12
+      return `${hour12}:${m} ${ampm}`
     }
+    const tasksWithDurations = tasks
+      .filter(t => !t.done)
+      .map(t => ({ title: t.title, duration: taskDurations[t.id] || '30 min' }))
+    const res = await getTimePlan(format(startTime), format(endTime), tasksWithDurations)
+    setSchedule(res.data.schedule)
+  } catch (error) {
+    console.error(error)
+  } finally {
+    setPlannerLoading(false)
   }
+}
 
   const completedTasks = tasks.filter(t => t.done).length
   const recentTasks = tasks.slice(0, 3)
@@ -184,6 +191,48 @@ const stats = [
           ))}
         </div>
       </div>
+      {showDurationModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md">
+      <h3 className="text-white font-semibold text-lg mb-1">⏱️ Task Durations</h3>
+      <p className="text-gray-400 text-sm mb-5">How long will each task take?</p>
+      <div className="flex flex-col gap-3 mb-6 max-h-72 overflow-y-auto">
+        {tasks.filter(t => !t.done).map(task => (
+          <div key={task.id} className="flex items-center justify-between gap-3">
+            <span className="text-gray-300 text-sm flex-1 truncate">{task.title}</span>
+            <select
+              value={taskDurations[task.id] || '30 min'}
+              onChange={(e) => setTaskDurations(prev => ({ ...prev, [task.id]: e.target.value }))}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option>15 min</option>
+              <option>30 min</option>
+              <option>45 min</option>
+              <option>1 hour</option>
+              <option>1.5 hours</option>
+              <option>2 hours</option>
+              <option>3 hours</option>
+            </select>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-3">
+        <button
+          onClick={() => setShowDurationModal(false)}
+          className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => { setShowDurationModal(false); handleTimePlan() }}
+          className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+        >
+          Generate Plan ✨
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </Layout>
   )
 }
@@ -320,12 +369,12 @@ const stats = [
                 ⚙️ Settings
               </button>
               <button
-                onClick={handleTimePlan}
-                disabled={plannerLoading}
-                className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
-              >
-                {plannerLoading ? '⏳ Planning...' : '✨ Plan my day'}
-              </button>
+  onClick={() => setShowDurationModal(true)}
+  disabled={plannerLoading}
+  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+>
+  {plannerLoading ? '⏳ Planning...' : '✨ Plan my day'}
+</button>
             </div>
           </div>
 
