@@ -13,12 +13,15 @@ const navItems = [
 
 function AIAssistant() {
   const navigate = useNavigate()
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState(() => {
+  const saved = sessionStorage.getItem('chat_history')
+  return saved ? JSON.parse(saved) : [
     {
       role: 'assistant',
       content: "Hi! I'm your TimeSense AI assistant. I can help you with productivity tips, analyzing your schedule, task prioritization, and anything related to your workday. What's on your mind?"
     }
-  ])
+  ]
+})
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const bottomRef = useRef(null)
@@ -27,10 +30,16 @@ function AIAssistant() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+  sessionStorage.setItem('chat_history', JSON.stringify(messages))
+}, [messages])
+  const user = JSON.parse(localStorage.getItem('user'))
+
   const handleLogout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  localStorage.removeItem('insights')
+  localStorage.removeItem(`insights_${user?.id}`)  // ← fix this too
+  sessionStorage.removeItem('chat_history')
   navigate('/login')
 }
 
