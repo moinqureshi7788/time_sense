@@ -102,7 +102,9 @@ router.post('/chat', verifyToken, async (req, res) => {
   try {
     const { message } = req.body
 
-    if (!message) return res.status(400).json({ message: 'Message is required' })
+    if (!message || !Array.isArray(message)) {
+      return res.status(400).json({ message: 'Message is required' })
+    }
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -111,10 +113,7 @@ router.post('/chat', verifyToken, async (req, res) => {
           role: 'system',
           content: 'You are TimeSense AI, a helpful productivity assistant. Give practical, concise advice. Keep responses under 150 words.'
         },
-        {
-          role: 'user',
-          content: message
-        }
+        ...message
       ]
     })
 
