@@ -62,7 +62,7 @@ function Insights() {
     analyzeFormData.append('screenTimeData', JSON.stringify(screenTimeData))
     if (healthFile) analyzeFormData.append('healthZip', healthFile)
 
-    const analyzeRes = await uploadHealth(analyzeFormData)  // ← call /analyze
+    const analyzeRes = await analyzeData(analyzeFormData)  // ← call /analyze
     const insights = analyzeRes.data
 
     setInsights(insights)
