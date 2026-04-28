@@ -18,7 +18,7 @@ function Dashboard() {
   
 
   const user = JSON.parse(localStorage.getItem('user'))
-  const savedInsights = localStorage.getItem('insights')
+  const savedInsights = user?.id ? localStorage.getItem(`insights_${user.id}`) : null
   const insights = savedInsights ? JSON.parse(savedInsights) : null
 
   useEffect(() => {
