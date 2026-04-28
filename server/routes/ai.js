@@ -106,13 +106,28 @@ router.post('/chat', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Message is required' })
     }
 
+    // Fetch user's real data
+    const [tasks, notes] = await Promise.all([
+      prisma.task.findMany({ where: { userId: req.user.id } }),
+      prisma.note.findMany({ where: { userId: req.user.id }, take: 5, orderBy: { createdAt: 'desc' } })
+    ])
+
+    const pendingTasks = tasks.filter(t => !t.done).map(t => t.title)
+    const completedTasks = tasks.filter(t => t.done).map(t => t.title)
+    const recentNotes = notes.map(n => n.title)
+
+    const systemPrompt = `You are TimeSense AI, a personalized productivity assistant. You have access to the user's real data:
+
+PENDING TASKS (${pendingTasks.length}): ${pendingTasks.length > 0 ? pendingTasks.join(', ') : 'None'}
+COMPLETED TASKS (${completedTasks.length}): ${completedTasks.length > 0 ? completedTasks.join(', ') : 'None'}
+RECENT NOTES: ${recentNotes.length > 0 ? recentNotes.join(', ') : 'None'}
+
+Use this data to give personalized, specific advice. Reference their actual tasks and notes when relevant. Keep responses under 150 words. Be friendly and practical.`
+
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        {
-          role: 'system',
-          content: 'You are TimeSense AI, a helpful productivity assistant. Give practical, concise advice. Keep responses under 150 words.'
-        },
+        { role: 'system', content: systemPrompt },
         ...message
       ]
     })
