@@ -64,7 +64,7 @@ function Layout({ children, current }) {
       </nav>
 
       {/* Page content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8" style={{ paddingTop: 'max(2.5rem, env(safe-area-inset-top))' }}>
         {children}
       </main>
 
