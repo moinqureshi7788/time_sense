@@ -38,10 +38,11 @@ function Insights() {
   const [healthFile, setHealthFile] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [progress, setProgress] = useState('')
+  const user = JSON.parse(localStorage.getItem('user'))
   const [insights, setInsights] = useState(() => {
-    const saved = localStorage.getItem('insights')
-    return saved ? JSON.parse(saved) : null
-  })
+  const saved = localStorage.getItem(`insights_${user?.id}`)
+  return saved ? JSON.parse(saved) : null
+})
 
   const handleAnalyze = async () => {
   if ((!screenTimeFile || screenTimeFile.length === 0) && !healthFile) return
@@ -66,7 +67,7 @@ function Insights() {
     const insights = analyzeRes.data
 
     setInsights(insights)
-    localStorage.setItem('insights', JSON.stringify(insights))
+    localStorage.setItem(`insights_${user?.id}`, JSON.stringify(insights))
 
   } catch (error) {
     console.error(error)
@@ -79,7 +80,7 @@ function Insights() {
 
   const handleClear = () => {
     setInsights(null)
-    localStorage.removeItem('insights')
+    localStorage.removeItem(`insights_${user?.id}`)
   }
 
   if (loading) return <InsightsSkeleton />
