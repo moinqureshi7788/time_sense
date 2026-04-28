@@ -13,10 +13,11 @@ function Layout({ children, current }) {
   const navigate = useNavigate()
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('insights')
+  navigate('/login')
+}
 
   return (
     <div className="min-h-screen bg-gray-950 flex">

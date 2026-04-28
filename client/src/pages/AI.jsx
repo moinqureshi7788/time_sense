@@ -28,10 +28,11 @@ function AIAssistant() {
   }, [messages])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('insights')
+  navigate('/login')
+}
 
   const handleSend = async () => {
     if (!input.trim() || thinking) return
