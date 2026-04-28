@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { uploadScreenTime, uploadHealth } from '../services/api'
+import { uploadScreenTime, uploadHealth, analyzeData } from '../services/api'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 
@@ -44,41 +44,38 @@ function Insights() {
   })
 
   const handleAnalyze = async () => {
-    if ((!screenTimeFile || screenTimeFile.length === 0) && !healthFile) return
-    setAnalyzing(true)
-    setProgress('Uploading files...')
-    try {
-      let result = null
-      if (screenTimeFile) {
-        setProgress('Reading Screen Time screenshot...')
-        const formData = new FormData()
-        screenTimeFile.forEach(file => {
-  formData.append('screenshots', file)
-})
-        const res = await uploadScreenTime(formData)
-        result = res.data
-      }
-      if (healthFile) {
-        setProgress('Parsing Health export...')
-        const formData = new FormData()
-        formData.append('healthExport', healthFile)
-        const res = await uploadHealth(formData)
-        result = { ...result, ...res.data }
-      }
-      setProgress('AI is generating your behavioral profile...')
-      await new Promise(r => setTimeout(r, 800))
-      if (result) {
-        setInsights(result)
-        localStorage.setItem('insights', JSON.stringify(result))
-      }
-    } catch (error) {
-      console.error(error)
-      setProgress('Something went wrong. Please try again.')
-    } finally {
-      setAnalyzing(false)
-      setProgress('')
+  if ((!screenTimeFile || screenTimeFile.length === 0) && !healthFile) return
+  setAnalyzing(true)
+  try {
+    let screenTimeData = null
+
+    if (screenTimeFile) {
+      setProgress('Reading Screen Time screenshot...')
+      const formData = new FormData()
+      screenTimeFile.forEach(file => formData.append('screenshots', file))
+      const res = await uploadScreenTime(formData)
+      screenTimeData = res.data.screenTimeData  // ← extract screenTimeData
     }
+
+    setProgress('AI is generating your behavioral profile...')
+    const analyzeFormData = new FormData()
+    analyzeFormData.append('screenTimeData', JSON.stringify(screenTimeData))
+    if (healthFile) analyzeFormData.append('healthZip', healthFile)
+
+    const analyzeRes = await uploadHealth(analyzeFormData)  // ← call /analyze
+    const insights = analyzeRes.data
+
+    setInsights(insights)
+    localStorage.setItem('insights', JSON.stringify(insights))
+
+  } catch (error) {
+    console.error(error)
+    setProgress('Something went wrong. Please try again.')
+  } finally {
+    setAnalyzing(false)
+    setProgress('')
   }
+}
 
   const handleClear = () => {
     setInsights(null)

@@ -36,6 +36,9 @@ export const uploadScreenTime = (formData) => API.post('/api/insights/read-scree
 export const uploadHealth = (formData) => API.post('/api/insights/upload-health', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 })
+export const analyzeData = (formData) => API.post('/api/insights/analyze', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+})
 
 // AI
 export const getPlanner = () => API.post('/api/ai/planner')

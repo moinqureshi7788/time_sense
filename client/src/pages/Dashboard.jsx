@@ -221,11 +221,11 @@ const stats = [
     </Link>
   </div>
 
-  {insights ? (
+  {insights?.energyCurve ? (
     <div>
       <div className="relative w-full" style={{ height: '160px' }}>
         <svg
-          viewBox={`0 0 ${insights.energyCurve.length * 50} 100`}
+          viewBox={`0 0 ${(insights.energyCurve?.length || 10) * 50} 100`}
           preserveAspectRatio="none"
           className="w-full"
           style={{ height: '130px' }}
@@ -235,7 +235,7 @@ const stats = [
             <line
               key={y}
               x1="0" y1={100 - y}
-              x2={insights.energyCurve.length * 50} y2={100 - y}
+              x2={(insights.energyCurve?.length || 10) * 50} y2={100 - y}
               stroke="#374151" strokeWidth="0.5" strokeDasharray="4"
             />
           ))}
