@@ -69,13 +69,15 @@ function Tasks() {
   }
 
   const handleToggle = async (id) => {
-    try {
-      const res = await toggleTask(id)
-      setTasks(tasks.map(t => t.id === id ? res.data : t))
-    } catch (error) {
-      console.error(error)
-    }
+  setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)) // update instantly
+  try {
+    const res = await toggleTask(id)
+    setTasks(tasks.map(t => t.id === id ? res.data : t)) // sync with server
+  } catch (error) {
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)) // revert on fail
+    console.error(error)
   }
+}
 
   const handleDelete = async (id) => {
     try {
