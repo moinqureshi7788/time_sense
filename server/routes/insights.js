@@ -202,53 +202,26 @@ ${healthSummary}
 Based on this data, generate a JSON response with exactly this structure:
 {
   "energyCurve": [
-    {"hour": "6 AM", "energy": 60, "label": "Waking up"},
-    {"hour": "7 AM", "energy": 70, "label": "Morning routine"},
-    {"hour": "8 AM", "energy": 85, "label": "Peak focus"},
-    {"hour": "9 AM", "energy": 90, "label": "Deep work"},
-    {"hour": "10 AM", "energy": 88, "label": "High focus"},
-    {"hour": "11 AM", "energy": 80, "label": "Good focus"},
-    {"hour": "12 PM", "energy": 60, "label": "Lunch time"},
-    {"hour": "1 PM", "energy": 50, "label": "Post lunch dip"},
-    {"hour": "2 PM", "energy": 55, "label": "Recovery"},
-    {"hour": "3 PM", "energy": 65, "label": "Afternoon focus"},
-    {"hour": "4 PM", "energy": 70, "label": "Second wind"},
-    {"hour": "5 PM", "energy": 65, "label": "Winding down"},
-    {"hour": "6 PM", "energy": 55, "label": "Evening"},
-    {"hour": "7 PM", "energy": 45, "label": "Dinner time"},
-    {"hour": "8 PM", "energy": 40, "label": "Relaxation"},
-    {"hour": "9 PM", "energy": 30, "label": "Wind down"},
-    {"hour": "10 PM", "energy": 20, "label": "Sleep prep"}
+    {"hour": "6 AM", "energy": <number 0-100 based on data>, "label": "<label>"},
+    ... continue for each hour until 10 PM
   ],
   "focusWindows": [
-    {"time": "9:00 AM - 11:00 AM", "type": "peak", "label": "Peak Focus", "description": "Your best time for deep work"},
-    {"time": "3:00 PM - 5:00 PM", "type": "good", "label": "Good Focus", "description": "Second wind for focused tasks"}
+    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, based on their actual app usage>"}
   ],
   "procrastinationWindows": [
-    {"time": "1:00 PM - 3:00 PM", "type": "high", "label": "High Risk", "description": "Post lunch slump, high phone usage detected"},
-    {"time": "9:00 PM - 11:00 PM", "type": "medium", "label": "Medium Risk", "description": "Evening scrolling tendency"}
+    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing their actual apps>"}
   ],
-  "sleepScore": 72,
-  "sleepInsight": "You average 6.5 hours of sleep. Going to bed 30 minutes earlier could significantly improve your morning focus.",
-  "mealTimes": {
-    "breakfast": "8:00 AM",
-    "lunch": "12:30 PM",
-    "dinner": "7:30 PM"
-  },
+  "sleepScore": <0-100>,
+  "sleepInsight": "<personalized to their actual sleep data>",
   "appInsights": [
-    {"app": "Chrome", "weeklyHours": 14, "pattern": "Heavy usage throughout the day", "impact": "neutral"},
-    {"app": "Reddit", "weeklyHours": 3, "pattern": "Usage spikes in afternoon", "impact": "negative"}
+    {"app": "<actual app from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative>"}
   ],
   "taskRecommendations": [
-    {"taskType": "Deep work / studying", "bestTime": "9:00 AM - 11:00 AM", "reason": "Peak energy and focus window"},
-    {"taskType": "Meetings / calls", "bestTime": "11:00 AM - 12:00 PM", "reason": "Still focused but energy slightly lower"},
-    {"taskType": "Light tasks / emails", "bestTime": "3:00 PM - 4:00 PM", "reason": "Recovery period after lunch dip"},
-    {"taskType": "Creative work", "bestTime": "4:00 PM - 6:00 PM", "reason": "Second wind with creative energy"},
-    {"taskType": "Exercise", "bestTime": "6:00 PM - 7:00 PM", "reason": "Natural activity peak in evening"}
+    {"taskType": "<type>", "bestTime": "<time>", "reason": "<reason tied to their specific data>"}
   ],
-  "personalityInsight": "You are a morning person with a strong focus peak before noon. Your biggest productivity threat is afternoon social media usage.",
-  "weeklyScreenTime": 33,
-  "procrastinationApps": ["Reddit", "YouTube"]
+  "personalityInsight": "<specific to their actual usage patterns>",
+  "weeklyScreenTime": <number from their data>,
+  "procrastinationApps": ["<actual apps from their data>"]
 }
 
 Respond with ONLY the JSON, no explanation, no markdown backticks.`
@@ -256,7 +229,7 @@ Respond with ONLY the JSON, no explanation, no markdown backticks.`
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
+      temperature: 0.3
     })
 
     let content = response.choices[0].message.content.trim()
