@@ -45,6 +45,8 @@ model ChromeHistory {
   productiveRatio  Float
   categoryTotals   Json
   topSites         Json
+  hourlyPattern    Json     @default("[]")
+  peakHours        Json     @default("[]")
   createdAt        DateTime @default(now())
   user             User     @relation(fields: [userId], references: [id])
 }

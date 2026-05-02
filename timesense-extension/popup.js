@@ -113,11 +113,16 @@ const analyzeHistory = async (period = 'today') => {
   const domainMap = {}
   const titlesToClassify = []
 
+  // Hourly visit tracking
+  const hourlyVisits = Array(24).fill(0)
+  const hourlyProductivity = Array(24).fill(0)
+
   for (const item of items) {
     const domain = getDomain(item.url)
     if (!domain) continue
 
     const title = item.title || domain
+    const visitHour = new Date(item.lastVisitTime).getHours()
 
     if (!domainMap[domain]) {
       domainMap[domain] = {
@@ -130,6 +135,9 @@ const analyzeHistory = async (period = 'today') => {
 
     domainMap[domain].visits += item.visitCount || 1
     if (item.title) domainMap[domain].titles.add(item.title)
+
+    // Track hourly visits
+    hourlyVisits[visitHour]++
   }
 
   // ── Step 2: Build list of titles to send to AI ───────────
@@ -208,13 +216,26 @@ const analyzeHistory = async (period = 'today') => {
 
   const productiveRatio = totalVisits > 0 ? productiveVisits / totalVisits : 0
 
+  // Build hourly pattern (only hours with visits)
+  const hourlyPattern = hourlyVisits
+    .map((visits, hour) => ({ hour, visits }))
+    .filter(h => h.visits > 0)
+
+  // Find peak browsing hours
+  const peakHours = [...hourlyPattern]
+    .sort((a, b) => b.visits - a.visits)
+    .slice(0, 3)
+    .map(h => h.hour)
+
   return {
     period,
     totalVisits,
     estimatedMinutes,
     productiveRatio,
     categoryTotals,
-    topSites
+    topSites,
+    hourlyPattern,
+    peakHours
   }
 }
 

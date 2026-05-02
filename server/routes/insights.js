@@ -299,12 +299,17 @@ Chrome Browsing Data (${chromeHistory.period}):
 - Estimated browsing time: ${Math.round(chromeHistory.estimatedMinutes)} minutes
 - Productive ratio: ${productive}% productive, ${100 - productive}% unproductive
 
+Peak browsing hours: ${chromeHistory.peakHours?.map(h => `${h}:00`).join(', ')}
+
+Hourly browsing pattern:
+${chromeHistory.hourlyPattern?.map(h => `  ${h.hour}:00 — ${h.visits} visits`).join('\n')}
+
 Category breakdown:
 ${Object.entries(cats).map(([cat, data]) => `  - ${cat}: ${data.visits} visits (sites: ${data.sites?.slice(0, 3).join(', ')})`).join('\n')}
 
 Top sites visited:
 ${topSites.slice(0, 5).map(s => `  - ${s.domain}: ${s.visits} visits (${s.category})`).join('\n')}
-      `
+`
     }
 
     // ── Health data ─────────────────────────────────────────
@@ -483,16 +488,18 @@ router.post('/chrome-history', verifyToken, async (req, res) => {
     }
 
     await prisma.chromeHistory.create({
-      data: {
-        userId: req.user.id,
-        period: period || 'today',
-        totalVisits,
-        estimatedMinutes,
-        productiveRatio,
-        categoryTotals,
-        topSites,
-      }
-    })
+  data: {
+    userId: req.user.id,
+    period: period || 'today',
+    totalVisits,
+    estimatedMinutes,
+    productiveRatio,
+    categoryTotals,
+    topSites,
+    hourlyPattern: hourlyPattern || [],
+    peakHours: peakHours || []
+  }
+})
 
     res.json({ message: 'Chrome history synced successfully' })
 
