@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TimeSense</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 360px;
+      min-height: 500px;
+      background: #030712;
+      color: #f9fafb;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+    }
+
+    .header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+    .header p { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    .badge {
+      background: #1d4ed8;
+      color: #fff;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+
+    .section { padding: 16px 20px; border-bottom: 1px solid #1f2937; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    /* Login */
+    #login-section input {
+      width: 100%;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+      margin-bottom: 8px;
+      outline: none;
+    }
+
+    #login-section input:focus { border-color: #3b82f6; }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #1e3a6e; color: #6b7280; cursor: not-allowed; }
+    .btn-danger { background: #1f2937; color: #ef4444; margin-top: 8px; }
+    .btn-danger:hover { background: #374151; }
+
+    .error { color: #ef4444; font-size: 12px; margin-top: 6px; text-align: center; }
+
+    /* Period selector */
+    .period-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .period-tab {
+      flex: 1;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .period-tab.active {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      color: #fff;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .stat-value { font-size: 18px; font-weight: 700; color: #fff; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* Category bars */
+    .category-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .category-label { width: 90px; font-size: 12px; color: #9ca3af; }
+    .category-bar-wrap { flex: 1; background: #1f2937; border-radius: 99px; height: 6px; }
+    .category-bar { height: 6px; border-radius: 99px; transition: width 0.4s; }
+    .category-pct { font-size: 11px; color: #6b7280; width: 32px; text-align: right; }
+
+    /* Top sites */
+    .site-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #1f2937;
+    }
+    .site-row:last-child { border-bottom: none; }
+    .site-domain { flex: 1; font-size: 12px; color: #d1d5db; }
+    .site-visits { font-size: 11px; color: #6b7280; }
+
+    /* Productive ratio */
+    .ratio-bar-wrap {
+      background: #1f2937;
+      border-radius: 99px;
+      height: 8px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+
+    .ratio-bar {
+      height: 8px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #22c55e, #3b82f6);
+      transition: width 0.5s;
+    }
+
+    .ratio-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    /* Auto sync */
+    .sync-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .sync-label { font-size: 13px; color: #d1d5db; }
+    .sync-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #374151;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+    select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px 20px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .loading .spinner {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 10px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .success-msg {
+      background: #14532d;
+      border: 1px solid #166534;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #86efac;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1d4ed8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .user-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .user-email { font-size: 11px; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>⏱ TimeSense</h1>
+      <p>Chrome Behavior Tracker</p>
+    </div>
+    <span class="badge">BETA</span>
+  </div>
+
+  <!-- Login Section -->
+  <div id="login-section" class="section" style="display:none">
+    <div class="section-title">Login to TimeSense</div>
+    <input type="email" id="email-input" placeholder="Email" />
+    <input type="password" id="password-input" placeholder="Password" />
+    <button class="btn btn-primary" id="login-btn">Login</button>
+    <p class="error" id="login-error"></p>
+  </div>
+
+  <!-- Main Section (shown when logged in) -->
+  <div id="main-section" style="display:none">
+
+    <!-- User info -->
+    <div class="section">
+      <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div>
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-email" id="user-email">—</div>
+        </div>
+      </div>
+
+      <!-- Period tabs -->
+      <div class="period-tabs">
+        <div class="period-tab active" data-period="today">Today</div>
+        <div class="period-tab" data-period="week">This Week</div>
+        <div class="period-tab" data-period="month">This Month</div>
+      </div>
+
+      <!-- Analyze button -->
+      <button class="btn btn-primary" id="analyze-btn">🔍 Analyze My Browsing</button>
+    </div>
+
+    <!-- Results (hidden until analyzed) -->
+    <div id="results-section" style="display:none">
+
+      <!-- Stats -->
+      <div class="section">
+        <div class="section-title">Overview</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="total-sites">—</div>
+            <div class="stat-label">Sites Visited</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="total-time">—</div>
+            <div class="stat-label">Est. Browse Time</div>
+          </div>
+        </div>
+
+        <!-- Productive ratio -->
+        <div style="margin-bottom: 4px; font-size: 12px; color: #9ca3af;">Productive vs Unproductive</div>
+        <div class="ratio-bar-wrap">
+          <div class="ratio-bar" id="ratio-bar" style="width: 0%"></div>
+        </div>
+        <div class="ratio-labels">
+          <span id="productive-pct">0% productive</span>
+          <span id="unproductive-pct">0% unproductive</span>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="section">
+        <div class="section-title">By Category</div>
+        <div id="categories-list"></div>
+      </div>
+
+      <!-- Top Sites -->
+      <div class="section">
+        <div class="section-title">Top Sites</div>
+        <div id="top-sites-list"></div>
+      </div>
+
+      <!-- Send to TimeSense -->
+      <div class="section">
+        <button class="btn btn-primary" id="send-btn">📤 Send to TimeSense Insights</button>
+        <div id="send-success" style="display:none" class="success-msg">✅ Synced to TimeSense!</div>
+      </div>
+
+    </div>
+
+    <!-- Auto Sync -->
+    <div class="section">
+      <div class="section-title">Auto Sync</div>
+      <div class="sync-row">
+        <div>
+          <div class="sync-label">Background Sync</div>
+          <div class="sync-sub">Automatically send data to TimeSense</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="auto-sync-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <select id="sync-frequency">
+        <option value="1">Every 1 hour</option>
+        <option value="6">Every 6 hours</option>
+        <option value="24" selected>Every 24 hours</option>
+      </select>
+    </div>
+
+    <!-- Logout -->
+    <div class="section">
+      <button class="btn btn-danger" id="logout-btn">🚪 Logout</button>
+    </div>
+
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-section" style="display:none" class="loading">
+    <span class="spinner">⏳</span>
+    <div id="loading-text">Analyzing your browsing...</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -243,4 +243,54 @@ Respond with ONLY the JSON, no explanation, no markdown backticks.`
   }
 })
 
+// ── Classify browser history titles with AI ─────────────────
+router.post('/classify-history', verifyToken, async (req, res) => {
+  try {
+    const { sites } = req.body
+
+    if (!sites || sites.length === 0) {
+      return res.json({ categories: [] })
+    }
+
+    const siteList = sites
+      .map((s, i) => `${i + 1}. Domain: "${s.domain}" | Title: "${s.title}"`)
+      .join('\n')
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a browser history classifier. Classify each site into exactly one of these categories:
+- work (coding, productivity tools, professional tasks)
+- learning (tutorials, courses, educational content, documentation)
+- entertainment (videos, music, games, memes — non-educational YouTube)
+- social (social media, messaging)
+- shopping (ecommerce, food delivery)
+- news (news articles, blogs)
+- other (anything else)
+
+Be smart about context. A YouTube page with a tutorial title = learning. A YouTube page with a music/funny video title = entertainment. GitHub = work. Wikipedia = learning.
+
+Respond with ONLY a JSON array, no explanation, no markdown:
+[{"domain":"youtube.com","category":"learning"},{"domain":"reddit.com","category":"entertainment"}]`
+        },
+        {
+          role: 'user',
+          content: `Classify these browser history entries:\n${siteList}\n\nReturn ONLY the JSON array.`
+        }
+      ]
+    })
+
+    let content = response.choices[0].message.content.trim()
+    content = content.replace(/```json/g, '').replace(/```/g, '').trim()
+    const categories = JSON.parse(content)
+    res.json({ categories })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Classification failed' })
+  }
+})
+
 export default router
