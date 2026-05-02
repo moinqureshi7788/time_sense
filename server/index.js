@@ -13,9 +13,18 @@ const app = express()
 const PORT = process.env.PORT || 8000
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://time-sense-five.vercel.app'
-    : 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'https://time-sense-five.vercel.app',
+      'http://localhost:5173'
+    ]
+    // Allow Chrome extensions and requests with no origin (Postman etc.)
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('chrome-extension://')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true
 }))
 app.use(express.json())
