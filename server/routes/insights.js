@@ -353,22 +353,24 @@ ${JSON.stringify(healthData.activity.hourly)}
 
     const prompt = `You are a behavioral analyst and productivity expert. Analyze the following user data and generate a detailed personalized insights report.
 
-SCREEN TIME DATA (extracted from iPhone screenshot):
+IMPORTANT RULES FOR CLASSIFICATION:
+- YouTube app on iPhone = ALWAYS procrastination. The user confirmed they only watch YouTube on phone for entertainment.
+- youtube.com on desktop (Chrome) = check the Chrome browsing data categories. If classified as "learning" or "work" by Chrome data, it's productive. If "entertainment", it's procrastination.
+- Safari and Chrome on iPhone = NEUTRAL. We cannot determine what the user was doing. Do NOT classify these as productive or procrastination without other evidence.
+- Chrome on desktop = use the Chrome browsing data hourly pattern and category breakdown to determine if productive or not. Do NOT assume Chrome = productive just because it's a browser.
+- Cross-reference iPhone Screen Time apps with Chrome desktop data. If Chrome desktop shows high productive ratio during the same period, the user was likely working.
+- Never assume an app is productive or unproductive based on its name alone (except YouTube iPhone app which is always procrastination per user confirmation).
+
+SCREEN TIME DATA (extracted from iPhone screenshot — mobile usage only):
 ${screenTimeData}
 
 HEALTH DATA FROM IPHONE:
 ${healthSummary}
 
-CHROME BROWSING DATA (from Chrome extension):
+CHROME BROWSING DATA (desktop only — use this for accurate productive/procrastination classification):
 ${chromeSummary}
 
-Use ALL three data sources together to build the most accurate picture of this person's behavior. 
-- Use Chrome data to understand what they were actually doing on their computer
-- Use Screen Time to understand mobile app usage patterns
-- Use Health data to understand sleep and activity patterns
-- Cross-reference all three to find when they were truly productive vs procrastinating
-
-Based on this data, generate a JSON response with exactly this structure:
+Based on ALL data and the rules above, generate a JSON response with exactly this structure:
 {
   "energyCurve": [
     {"hour": "6 AM", "energy": <number 0-100 based on data>, "label": "<label>"},
@@ -390,23 +392,23 @@ Based on this data, generate a JSON response with exactly this structure:
     {"hour": "10 PM", "energy": <number>, "label": "<label>"}
   ],
   "focusWindows": [
-    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, referencing their actual data>"}
+    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, based on Chrome data categories and health data — do not assume Safari/Chrome iPhone = productive>"}
   ],
   "procrastinationWindows": [
-    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing their actual apps and sites>"}
+    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing specific evidence e.g. YouTube iPhone app usage, Chrome entertainment categories>"}
   ],
   "sleepScore": <0-100>,
   "sleepInsight": "<personalized to their actual sleep data>",
   "appInsights": [
-    {"app": "<actual app or site from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative>"}
+    {"app": "<actual app or site from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative — neutral for Safari/Chrome iPhone unless Chrome desktop data confirms>"}
   ],
   "taskRecommendations": [
     {"taskType": "<type>", "bestTime": "<time>", "reason": "<reason tied to their specific data>"}
   ],
-  "personalityInsight": "<specific to their actual usage patterns across all three data sources>",
+  "personalityInsight": "<specific to their actual usage patterns — mention YouTube iPhone as confirmed procrastination source, use Chrome data for desktop behavior>",
   "weeklyScreenTime": <number from their data>,
-  "procrastinationApps": ["<actual apps and sites from their data>"],
-  "chromeInsight": "<one sentence about their browsing behavior based on Chrome data>"
+  "procrastinationApps": ["<only include apps with confirmed procrastination evidence — YouTube iPhone always included, youtube.com only if Chrome data shows entertainment>"],
+  "chromeInsight": "<one sentence about their actual desktop browsing behavior based on Chrome extension data>"
 }
 
 Respond with ONLY the JSON, no explanation, no markdown backticks.`
