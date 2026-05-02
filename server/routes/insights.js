@@ -162,11 +162,39 @@ Return ONLY this JSON, no explanation, no markdown:
 })
 
 // ── Step 2: Full Analysis ───────────────────────────────────
+// ── Step 2: Full Analysis ───────────────────────────────────
 router.post('/analyze', verifyToken, upload.single('healthZip'), async (req, res) => {
   try {
     const { screenTimeData } = req.body
     let healthSummary = 'No health data provided.'
+    let chromeSummary = 'No Chrome browsing data provided.'
 
+    // ── Fetch latest Chrome history from DB ─────────────────
+    const chromeHistory = await prisma.chromeHistory.findFirst({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (chromeHistory) {
+      const cats = chromeHistory.categoryTotals
+      const topSites = chromeHistory.topSites
+      const productive = Math.round(chromeHistory.productiveRatio * 100)
+
+      chromeSummary = `
+Chrome Browsing Data (${chromeHistory.period}):
+- Total visits: ${chromeHistory.totalVisits}
+- Estimated browsing time: ${Math.round(chromeHistory.estimatedMinutes)} minutes
+- Productive ratio: ${productive}% productive, ${100 - productive}% unproductive
+
+Category breakdown:
+${Object.entries(cats).map(([cat, data]) => `  - ${cat}: ${data.visits} visits (sites: ${data.sites?.slice(0, 3).join(', ')})`).join('\n')}
+
+Top sites visited:
+${topSites.slice(0, 5).map(s => `  - ${s.domain}: ${s.visits} visits (${s.category})`).join('\n')}
+      `
+    }
+
+    // ── Health data ─────────────────────────────────────────
     if (req.file) {
       try {
         const xmlString = await extractXMLFromZip(req.file.buffer)
@@ -200,29 +228,54 @@ ${screenTimeData}
 HEALTH DATA FROM IPHONE:
 ${healthSummary}
 
+CHROME BROWSING DATA (from Chrome extension):
+${chromeSummary}
+
+Use ALL three data sources together to build the most accurate picture of this person's behavior. 
+- Use Chrome data to understand what they were actually doing on their computer
+- Use Screen Time to understand mobile app usage patterns
+- Use Health data to understand sleep and activity patterns
+- Cross-reference all three to find when they were truly productive vs procrastinating
+
 Based on this data, generate a JSON response with exactly this structure:
 {
   "energyCurve": [
     {"hour": "6 AM", "energy": <number 0-100 based on data>, "label": "<label>"},
-    ... continue for each hour until 10 PM
+    {"hour": "7 AM", "energy": <number>, "label": "<label>"},
+    {"hour": "8 AM", "energy": <number>, "label": "<label>"},
+    {"hour": "9 AM", "energy": <number>, "label": "<label>"},
+    {"hour": "10 AM", "energy": <number>, "label": "<label>"},
+    {"hour": "11 AM", "energy": <number>, "label": "<label>"},
+    {"hour": "12 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "1 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "2 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "3 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "4 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "5 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "6 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "7 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "8 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "9 PM", "energy": <number>, "label": "<label>"},
+    {"hour": "10 PM", "energy": <number>, "label": "<label>"}
   ],
   "focusWindows": [
-    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, based on their actual app usage>"}
+    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, referencing their actual data>"}
   ],
   "procrastinationWindows": [
-    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing their actual apps>"}
+    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing their actual apps and sites>"}
   ],
   "sleepScore": <0-100>,
   "sleepInsight": "<personalized to their actual sleep data>",
   "appInsights": [
-    {"app": "<actual app from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative>"}
+    {"app": "<actual app or site from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative>"}
   ],
   "taskRecommendations": [
     {"taskType": "<type>", "bestTime": "<time>", "reason": "<reason tied to their specific data>"}
   ],
-  "personalityInsight": "<specific to their actual usage patterns>",
+  "personalityInsight": "<specific to their actual usage patterns across all three data sources>",
   "weeklyScreenTime": <number from their data>,
-  "procrastinationApps": ["<actual apps from their data>"]
+  "procrastinationApps": ["<actual apps and sites from their data>"],
+  "chromeInsight": "<one sentence about their browsing behavior based on Chrome data>"
 }
 
 Respond with ONLY the JSON, no explanation, no markdown backticks.`
