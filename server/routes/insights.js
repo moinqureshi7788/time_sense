@@ -4,6 +4,7 @@ import multer from 'multer'
 import xml2js from 'xml2js'
 import unzipper from 'unzipper'
 import Groq from 'groq-sdk'
+import prisma from '../prisma/client.js'
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
