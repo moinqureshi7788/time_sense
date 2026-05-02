@@ -293,4 +293,33 @@ Respond with ONLY a JSON array, no explanation, no markdown:
   }
 })
 
+// ── Receive Chrome history from extension ───────────────────
+router.post('/chrome-history', verifyToken, async (req, res) => {
+  try {
+    const { period, totalVisits, estimatedMinutes, productiveRatio, categoryTotals, topSites } = req.body
+
+    if (!totalVisits) {
+      return res.status(400).json({ message: 'No data provided' })
+    }
+
+    await prisma.chromeHistory.create({
+      data: {
+        userId: req.user.id,
+        period: period || 'today',
+        totalVisits,
+        estimatedMinutes,
+        productiveRatio,
+        categoryTotals,
+        topSites,
+      }
+    })
+
+    res.json({ message: 'Chrome history synced successfully' })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Failed to save chrome history' })
+  }
+})
+
 export default router

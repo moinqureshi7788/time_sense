@@ -15,6 +15,7 @@ model User {
   createdAt DateTime @default(now())
   tasks     Task[]
   notes     Note[]
+  chromeHistory    ChromeHistory[]
 }
 
 model Task {
@@ -33,4 +34,17 @@ model Note {
   createdAt DateTime @default(now())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model ChromeHistory {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  period           String
+  totalVisits      Int
+  estimatedMinutes Float
+  productiveRatio  Float
+  categoryTotals   Json
+  topSites         Json
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
 }
