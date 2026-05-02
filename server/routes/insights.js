@@ -55,44 +55,157 @@ const parseHealthXML = async (xmlString) => {
   const result = await parser.parseStringPromise(xmlString)
   const records = result?.HealthData?.Record || []
 
-  const sleep = records
-    .filter(r => r.$.type?.includes('SleepAnalysis'))
-    .slice(0, 20)
-    .map(r => ({
-      type: r.$.type,
-      value: r.$.value,
-      startDate: r.$.startDate,
-      endDate: r.$.endDate
+  // ── Sleep Analysis ──────────────────────────────────────
+  const sleepRecords = records.filter(r => r.$.type?.includes('SleepAnalysis'))
+
+  // Group sleep records by night (date of sleep start)
+  const sleepByNight = {}
+  for (const r of sleepRecords) {
+    const start = new Date(r.$.startDate)
+    const end = new Date(r.$.endDate)
+    const value = r.$.value // Asleep, InBed, Awake, Core, Deep, REM
+    const durationMins = (end - start) / 60000
+
+    // Use the date of sleep start (or previous day if after midnight)
+    const nightKey = start.getHours() < 12
+      ? new Date(start.getTime() - 86400000).toDateString()
+      : start.toDateString()
+
+    if (!sleepByNight[nightKey]) {
+      sleepByNight[nightKey] = {
+        date: nightKey,
+        totalMins: 0,
+        deepMins: 0,
+        remMins: 0,
+        coreMins: 0,
+        awakeMins: 0,
+        inBedMins: 0,
+        bedtime: null,
+        wakeTime: null
+      }
+    }
+
+    const night = sleepByNight[nightKey]
+    night.inBedMins += durationMins
+
+    if (value?.includes('Asleep') || value?.includes('Core')) {
+      night.coreMins += durationMins
+      night.totalMins += durationMins
+    }
+    if (value?.includes('Deep')) {
+      night.deepMins += durationMins
+      night.totalMins += durationMins
+    }
+    if (value?.includes('REM')) {
+      night.remMins += durationMins
+      night.totalMins += durationMins
+    }
+    if (value?.includes('Awake')) {
+      night.awakeMins += durationMins
+    }
+
+    // Track earliest bedtime and latest wake time
+    if (!night.bedtime || start < new Date(night.bedtime)) {
+      night.bedtime = r.$.startDate
+    }
+    if (!night.wakeTime || end > new Date(night.wakeTime)) {
+      night.wakeTime = r.$.endDate
+    }
+  }
+
+  // Build nightly sleep summary for last 14 nights
+  const sleepNights = Object.values(sleepByNight)
+    .filter(n => n.totalMins > 60) // filter out naps/noise
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 14)
+    .map(n => ({
+      date: n.date,
+      totalHours: Math.round(n.totalMins / 60 * 10) / 10,
+      deepHours: Math.round(n.deepMins / 60 * 10) / 10,
+      remHours: Math.round(n.remMins / 60 * 10) / 10,
+      coreHours: Math.round(n.coreMins / 60 * 10) / 10,
+      awakeHours: Math.round(n.awakeMins / 60 * 10) / 10,
+      qualityScore: Math.round(((n.deepMins + n.remMins) / Math.max(n.totalMins, 1)) * 100),
+      bedtime: n.bedtime ? new Date(n.bedtime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+      wakeTime: n.wakeTime ? new Date(n.wakeTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null
     }))
 
-  const steps = records
-    .filter(r => r.$.type?.includes('StepCount'))
-    .slice(0, 20)
-    .map(r => ({
-      value: r.$.value,
-      startDate: r.$.startDate,
-      endDate: r.$.endDate
-    }))
+  // Calculate averages
+  const avgSleep = sleepNights.length > 0 ? {
+    avgTotalHours: Math.round(sleepNights.reduce((s, n) => s + n.totalHours, 0) / sleepNights.length * 10) / 10,
+    avgDeepHours: Math.round(sleepNights.reduce((s, n) => s + n.deepHours, 0) / sleepNights.length * 10) / 10,
+    avgRemHours: Math.round(sleepNights.reduce((s, n) => s + n.remHours, 0) / sleepNights.length * 10) / 10,
+    avgQualityScore: Math.round(sleepNights.reduce((s, n) => s + n.qualityScore, 0) / sleepNights.length),
+    avgBedtime: sleepNights[0]?.bedtime || null,
+    avgWakeTime: sleepNights[0]?.wakeTime || null,
+    consistency: sleepNights.length >= 3 ? Math.round(100 - (Math.max(...sleepNights.map(n => n.totalHours)) - Math.min(...sleepNights.map(n => n.totalHours))) * 10) : null
+  } : null
 
-  const heartRate = records
-    .filter(r => r.$.type?.includes('HeartRate'))
-    .slice(0, 20)
-    .map(r => ({
-      value: r.$.value,
-      startDate: r.$.startDate,
-      endDate: r.$.endDate
-    }))
+  // ── Steps ───────────────────────────────────────────────
+  // Group steps by hour to find activity patterns
+  const stepsByHour = {}
+  for (const r of records.filter(r => r.$.type?.includes('StepCount'))) {
+    const hour = new Date(r.$.startDate).getHours()
+    stepsByHour[hour] = (stepsByHour[hour] || 0) + parseFloat(r.$.value || 0)
+  }
 
-  const activity = records
-    .filter(r => r.$.type?.includes('ActiveEnergyBurned'))
-    .slice(0, 20)
-    .map(r => ({
-      value: r.$.value,
-      startDate: r.$.startDate,
-      endDate: r.$.endDate
-    }))
+  const hourlySteps = Object.entries(stepsByHour)
+    .map(([hour, steps]) => ({ hour: parseInt(hour), steps: Math.round(steps) }))
+    .sort((a, b) => a.hour - b.hour)
 
-  return { sleep, steps, heartRate, activity }
+  const totalSteps = hourlySteps.reduce((s, h) => s + h.steps, 0)
+  const mostActiveHour = hourlySteps.sort((a, b) => b.steps - a.steps)[0]?.hour || null
+
+  // ── Heart Rate ──────────────────────────────────────────
+  const heartRateRecords = records.filter(r => r.$.type?.includes('HeartRate'))
+  const hrByHour = {}
+  for (const r of heartRateRecords) {
+    const hour = new Date(r.$.startDate).getHours()
+    if (!hrByHour[hour]) hrByHour[hour] = []
+    hrByHour[hour].push(parseFloat(r.$.value || 0))
+  }
+
+  const hourlyHeartRate = Object.entries(hrByHour)
+    .map(([hour, values]) => ({
+      hour: parseInt(hour),
+      avgBpm: Math.round(values.reduce((s, v) => s + v, 0) / values.length)
+    }))
+    .sort((a, b) => a.hour - b.hour)
+
+  const restingHR = hourlyHeartRate
+    .filter(h => h.hour >= 0 && h.hour <= 6)
+    .reduce((s, h, _, arr) => s + h.avgBpm / arr.length, 0)
+
+  // ── Active Energy ───────────────────────────────────────
+  const activityRecords = records.filter(r => r.$.type?.includes('ActiveEnergyBurned'))
+  const energyByHour = {}
+  for (const r of activityRecords) {
+    const hour = new Date(r.$.startDate).getHours()
+    energyByHour[hour] = (energyByHour[hour] || 0) + parseFloat(r.$.value || 0)
+  }
+
+  const hourlyActivity = Object.entries(energyByHour)
+    .map(([hour, calories]) => ({ hour: parseInt(hour), calories: Math.round(calories) }))
+    .sort((a, b) => a.hour - b.hour)
+
+  return {
+    sleep: {
+      nights: sleepNights,
+      averages: avgSleep
+    },
+    steps: {
+      hourly: hourlySteps,
+      total: totalSteps,
+      mostActiveHour
+    },
+    heartRate: {
+      hourly: hourlyHeartRate,
+      restingBpm: Math.round(restingHR) || null
+    },
+    activity: {
+      hourly: hourlyActivity
+    }
+  }
 }
 
 // ── Step 1: Read Screen Time Screenshot ────────────────────
@@ -200,19 +313,32 @@ ${topSites.slice(0, 5).map(s => `  - ${s.domain}: ${s.visits} visits (${s.catego
         const xmlString = await extractXMLFromZip(req.file.buffer)
         if (xmlString) {
           const healthData = await parseHealthXML(xmlString)
-          healthSummary = `
-Sleep records: ${healthData.sleep.length} found
-Sample sleep: ${JSON.stringify(healthData.sleep.slice(0, 3))}
+const s = healthData.sleep
+const avgS = s.averages
 
-Step records: ${healthData.steps.length} found
-Sample steps: ${JSON.stringify(healthData.steps.slice(0, 3))}
+healthSummary = `
+SLEEP ANALYSIS (last ${s.nights.length} nights):
+- Average sleep duration: ${avgS?.avgTotalHours}h per night
+- Average deep sleep: ${avgS?.avgDeepHours}h
+- Average REM sleep: ${avgS?.avgRemHours}h
+- Sleep quality score: ${avgS?.avgQualityScore}/100
+- Average bedtime: ${avgS?.avgBedtime}
+- Average wake time: ${avgS?.avgWakeTime}
+- Sleep consistency: ${avgS?.consistency}/100
+- Nightly breakdown: ${JSON.stringify(s.nights.slice(0, 7))}
 
-Heart rate records: ${healthData.heartRate.length} found
-Sample heart rate: ${JSON.stringify(healthData.heartRate.slice(0, 3))}
+STEPS & ACTIVITY:
+- Total steps tracked: ${healthData.steps.total}
+- Most active hour: ${healthData.steps.mostActiveHour}:00
+- Hourly step pattern: ${JSON.stringify(healthData.steps.hourly)}
 
-Active energy records: ${healthData.activity.length} found
-Sample activity: ${JSON.stringify(healthData.activity.slice(0, 3))}
-          `
+HEART RATE:
+- Resting heart rate: ${healthData.heartRate.restingBpm} bpm
+- Hourly heart rate: ${JSON.stringify(healthData.heartRate.hourly)}
+
+ACTIVE ENERGY BY HOUR:
+${JSON.stringify(healthData.activity.hourly)}
+`
         }
       } catch (xmlError) {
         console.error('XML parsing error:', xmlError)
