@@ -279,6 +279,7 @@ Return ONLY this JSON, no explanation, no markdown:
 router.post('/analyze', verifyToken, upload.single('healthZip'), async (req, res) => {
   try {
     const { screenTimeData } = req.body
+    const parsed = JSON.parse(screenTimeData)
     let healthSummary = 'No health data provided.'
     let chromeSummary = 'No Chrome browsing data provided.'
 
@@ -353,62 +354,70 @@ ${JSON.stringify(healthData.activity.hourly)}
 
     const prompt = `You are a behavioral analyst and productivity expert. Analyze the following user data and generate a detailed personalized insights report.
 
-IMPORTANT RULES FOR CLASSIFICATION:
-- YouTube app on iPhone = ALWAYS procrastination. The user confirmed they only watch YouTube on phone for entertainment.
-- youtube.com on desktop (Chrome) = check the Chrome browsing data categories. If classified as "learning" or "work" by Chrome data, it's productive. If "entertainment", it's procrastination.
-- Safari and Chrome on iPhone = NEUTRAL. We cannot determine what the user was doing. Do NOT classify these as productive or procrastination without other evidence.
-- Chrome on desktop = use the Chrome browsing data hourly pattern and category breakdown to determine if productive or not. Do NOT assume Chrome = productive just because it's a browser.
-- Cross-reference iPhone Screen Time apps with Chrome desktop data. If Chrome desktop shows high productive ratio during the same period, the user was likely working.
-- Never assume an app is productive or unproductive based on its name alone (except YouTube iPhone app which is always procrastination per user confirmation).
+IMPORTANT CLASSIFICATION RULES:
+- YouTube app on iPhone = ALWAYS procrastination (user confirmed entertainment only)
+- youtube.com on desktop (Chrome) = check Chrome category. If "learning" = productive. If "entertainment" = procrastination.
+- Safari and Chrome on iPhone = NEUTRAL. Cannot determine intent. Do NOT classify as productive or procrastination.
+- Chrome on desktop = use Chrome browsing data hourly pattern and categories. Do NOT assume productive just because it's a browser.
+- If no Chrome data is available, classify all iPhone browser usage as neutral.
+- Never assume an app is productive or unproductive based on name alone (except YouTube iPhone = always procrastination).
 
-SCREEN TIME DATA (extracted from iPhone screenshot — mobile usage only):
-${screenTimeData}
+SCREEN TIME DATA (iPhone — mobile usage only):
+${JSON.stringify(parsed, null, 2)}
+
+SCREEN TIME PATTERNS:
+- Most used times: ${parsed.mostUsedTimes}
+- Daily phone pickups: ${parsed.pickups}
+- Daily notifications: ${parsed.notifications}
+- If pickups > 80/day: user is highly distraction-prone, shorten focus windows to 60-90 mins max
+- If most used times is "afternoon/evening": energy curve peaks must reflect this
+- Use mostUsedTimes and pickups to shape the energy curve and procrastination windows
 
 HEALTH DATA FROM IPHONE:
 ${healthSummary}
 
-CHROME BROWSING DATA (desktop only — use this for accurate productive/procrastination classification):
+CHROME BROWSING DATA (desktop only):
 ${chromeSummary}
 
 Based on ALL data and the rules above, generate a JSON response with exactly this structure:
 {
   "energyCurve": [
-    {"hour": "6 AM", "energy": <number 0-100 based on data>, "label": "<label>"},
-    {"hour": "7 AM", "energy": <number>, "label": "<label>"},
-    {"hour": "8 AM", "energy": <number>, "label": "<label>"},
-    {"hour": "9 AM", "energy": <number>, "label": "<label>"},
-    {"hour": "10 AM", "energy": <number>, "label": "<label>"},
-    {"hour": "11 AM", "energy": <number>, "label": "<label>"},
-    {"hour": "12 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "1 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "2 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "3 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "4 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "5 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "6 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "7 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "8 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "9 PM", "energy": <number>, "label": "<label>"},
-    {"hour": "10 PM", "energy": <number>, "label": "<label>"}
+    {"hour": "6 AM", "energy": <0-100 based on actual data>, "label": "<label>"},
+    {"hour": "7 AM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "8 AM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "9 AM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "10 AM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "11 AM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "12 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "1 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "2 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "3 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "4 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "5 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "6 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "7 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "8 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "9 PM", "energy": <0-100>, "label": "<label>"},
+    {"hour": "10 PM", "energy": <0-100>, "label": "<label>"}
   ],
   "focusWindows": [
-    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, based on Chrome data categories and health data — do not assume Safari/Chrome iPhone = productive>"}
+    {"time": "<time range>", "type": "<peak|good>", "label": "<label>", "description": "<why, based on Chrome categories and health data — do not assume Safari/Chrome iPhone = productive>"}
   ],
   "procrastinationWindows": [
-    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing specific evidence e.g. YouTube iPhone app usage, Chrome entertainment categories>"}
+    {"time": "<time range>", "type": "<high|medium>", "label": "<label>", "description": "<why, referencing specific evidence e.g. YouTube iPhone usage, Chrome entertainment categories, high pickups>"}
   ],
   "sleepScore": <0-100>,
-  "sleepInsight": "<personalized to their actual sleep data>",
+  "sleepInsight": "<personalized to their actual sleep data — mention specific hours, bedtime, wake time>",
   "appInsights": [
-    {"app": "<actual app or site from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative — neutral for Safari/Chrome iPhone unless Chrome desktop data confirms>"}
+    {"app": "<actual app or site from their data>", "weeklyHours": <number>, "pattern": "<observed pattern>", "impact": "<positive|neutral|negative — neutral for Safari/Chrome iPhone unless Chrome desktop confirms>"}
   ],
   "taskRecommendations": [
     {"taskType": "<type>", "bestTime": "<time>", "reason": "<reason tied to their specific data>"}
   ],
-  "personalityInsight": "<specific to their actual usage patterns — mention YouTube iPhone as confirmed procrastination source, use Chrome data for desktop behavior>",
+  "personalityInsight": "<2-3 sentences naming their specific apps, actual usage times, and pickup count — mention YouTube iPhone as confirmed procrastination, use Chrome data for desktop behavior>",
   "weeklyScreenTime": <number from their data>,
-  "procrastinationApps": ["<only include apps with confirmed procrastination evidence — YouTube iPhone always included, youtube.com only if Chrome data shows entertainment>"],
-  "chromeInsight": "<one sentence about their actual desktop browsing behavior based on Chrome extension data>"
+  "procrastinationApps": ["<only apps with confirmed procrastination evidence — YouTube iPhone always included, youtube.com only if Chrome shows entertainment>"],
+  "chromeInsight": "<one sentence about their actual desktop browsing behavior based on Chrome data, or null if no Chrome data>"
 }
 
 Respond with ONLY the JSON, no explanation, no markdown backticks.`
